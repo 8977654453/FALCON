@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<!-- FALCON Unified Single File — Part 1/4 (Lines 1–~600) -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FALCON Quantum Defense Dashboard — Unified Single File</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Google Fonts and Font Awesome (Icons) -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root{
+      --bg-primary:#0b0b0b;
+      --bg-secondary:#11141d;
+      --bg-panel:#0e111a;
+      --text-primary:#e0f7fa;
+      --text-secondary:#b0bec5;
+      --text-muted:#8aa3ad;
+      --border-primary:#2b3944;
+      --border-secondary:#3a4b57;
+      --accent-cyan:#21e6c1;
+      --accent-purple:#9b5cff;
+      --accent-red:#ff4d4f;
+      --accent-green:#00ff88;
+      --accent-amber:#ffc107;
+      --accent-blue:#14b8ff;
+      --accent-pink:#ff6ec7;
+      --grad-main:linear-gradient(90deg,#21e6c1,#9b5cff);
+      --shadow-1: 0 4px 12px rgba(0,0,0,.35);
+      --shadow-2: 0 8px 24px rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      background:var(--bg-primary);
+      color:var(--text-primary);
+      font-family:'Roboto Mono',monospace;
+      overflow:hidden;
+    }
+
+    /* App Shell */
+    .app{
+      display:grid;
+      grid-template-columns: 300px 1fr;
+      grid-template-rows: 64px 1fr;
+      grid-template-areas:
+        "sidebar header"
+        "sidebar main";
+      height:100vh;
+    }
+
+    /* Sidebar */
+    .sidebar{
+      grid-area:sidebar;
+      background:var(--bg-secondary);
+      border-right:1px solid var(--border-primary);
+      display:flex;
+      flex-direction:column;
+      overflow:auto;
+    }
+    .brand{
+      display:flex;align-items:center;gap:10px;
+      padding:14px 16px;
+      border-bottom:1px solid var(--border-primary);
+      background:linear-gradient(180deg,rgba(33,230,193,.08),transparent);
+    }
+    .brand i{color:var(--accent-cyan)}
+    .brand .t{
+      display:flex;flex-direction:column;line-height:1.1
+    }
+    .brand .t .name{
+      font-family:'Orbitron',monospace;
+      font-weight:900;letter-spacing:2px;color:var(--accent-cyan)
+    }
+    .brand .t .sub{
+      color:var(--text-muted);font-size:.72rem
+    }
+    .menu{
+      padding:10px;display:flex;flex-direction:column;gap:6px
+    }
+    .menu .group{
+      margin:8px 0 4px;
+      color:var(--text-secondary);
+      font-size:.72rem;text-transform:uppercase;opacity:.85
+    }
+    .item{
+      display:flex;align-items:center;gap:12px;
+      padding:10px 12px;border-radius:10px;cursor:pointer;
+      color:var(--text-primary);border:1px solid transparent;
+      transition:.2s ease; user-select:none;
+    }
+    .item i{color:var(--accent-purple);width:20px;text-align:center}
+    .item:hover{background:rgba(33,230,193,.10);border-color:var(--border-primary)}
+    .item.active{background:rgba(155,92,255,.10);border-color:var(--border-secondary)}
+    .spacer{height:8px}
+    .footer-note{margin:10px;color:var(--text-muted);font-size:.7rem}
+
+    /* Header */
+    .header{
+      grid-area:header;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:10px 14px;border-bottom:1px solid var(--border-primary);
+      background:linear-gradient(180deg,rgba(155,92,255,.08),transparent);
+    }
+    .crumbs{color:var(--text-secondary);font-size:.9rem}
+    .header-cta{display:flex;align-items:center;gap:8px}
+    .btn{border:none;border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer}
+    .btn.cyan{background:var(--accent-cyan);color:#001a15}
+    .btn.purple{background:var(--accent-purple);color:#fff}
+    .btn.red{background:var(--accent-red);color:#fff}
+    .btn.ghost{background:transparent;border:1px solid var(--border-secondary);color:var(--text-primary)}
+    .btn:active{transform:translateY(1px)}
+    .hdr-stats{display:flex;gap:10px}
+    .chip{
+      border:1px solid var(--border-secondary);border-radius:999px;
+      padding:6px 10px;display:flex;align-items:center;gap:8px;font-size:.85rem
+    }
+    .chip i{color:var(--accent-amber)}
+
+    /* Main */
+    .main{
+      grid-area:main;
+      padding:16px;overflow:auto;
+      height:calc(100vh - 64px);
+    }
+    .view{display:none;animation:fadeIn .2s ease}
+    .view.active{display:block}
+    @keyframes fadeIn{from{opacity:.7;transform:translateY(2px)}to{opacity:1;transform:none}}
+
+    /* Card and layouts */
+    .card{
+      background:var(--bg-panel);
+      border:1px solid var(--border-secondary);
+      border-radius:12px;
+      box-shadow:var(--shadow-1);
+      padding:14px;margin-bottom:12px;
+    }
+    .card-h{
+      display:flex;align-items:center;justify-content:space-between;margin-bottom:10px
+    }
+    .card-h h3{
+      font-family:'Orbitron',monospace;
+      font-size:1rem;color:var(--accent-cyan)
+    }
+    .grid{display:grid;gap:12px}
+    .c2{grid-template-columns:1fr 1fr}
+    .c3{grid-template-columns:1fr 1fr 1fr}
+    .c4{grid-template-columns:1fr 1fr 1fr 1fr}
+    @media(max-width:1200px){.c4{grid-template-columns:1fr 1fr}}
+    @media(max-width:900px){.c3{grid-template-columns:1fr}}
+    @media(max-width:700px){.c2{grid-template-columns:1fr}}
+
+    /* Stats */
+    .stat{
+      border:1px solid var(--border-primary);
+      border-radius:12px;background:#0f1320;
+      padding:12px;display:flex;flex-direction:column;gap:2px
+    }
+    .stat .k{color:var(--text-muted);font-size:.8rem}
+    .stat .v{font-family:'Orbitron',monospace;font-weight:900;font-size:1.2rem}
+    .mut{color:var(--text-muted)}
+    .ok{color:var(--accent-green)}
+    .warn{color:var(--accent-amber)}
+    .err{color:var(--accent-red)}
+
+    /* Tables */
+    table{width:100%;border-collapse:collapse}
+    th,td{border:1px solid var(--border-secondary);padding:8px;font-size:.9rem}
+    th{background:#0f1320;color:var(--accent-cyan);text-transform:uppercase}
+    .badge{
+      padding:3px 8px;border-radius:999px;font-size:.75rem;
+      border:1px solid var(--border-secondary);display:inline-block
+    }
+    .b-gn{background:rgba(0,255,136,.12);color:var(--accent-green)}
+    .b-rd{background:rgba(255,77,79,.12);color:var(--accent-red)}
+    .b-am{background:rgba(255,193,7,.12);color:var(--accent-amber)}
+    .b-pu{background:rgba(155,92,255,.12);color:var(--accent-purple)}
+
+    /* Communications */
+    .comm{
+      display:flex;flex-direction:column;height:360px;border-radius:12px;
+      border:1px solid var(--border-secondary);overflow:hidden
+    }
+    .msgs{flex:1;overflow:auto;padding:10px;background:#0b0f18}
+    .msg{display:flex;gap:8px;margin-bottom:8px}
+    .avatar{
+      width:32px;height:32px;border-radius:50%;background:var(--accent-cyan);
+      color:#00221b;display:flex;align-items:center;justify-content:center;font-weight:900
+    }
+    .msg .meta{color:var(--text-muted);font-size:.75rem}
+    .input{border-top:1px solid var(--border-secondary);display:flex;gap:8px;padding:8px;background:#0d1220}
+    .input input{flex:1;background:#0a0f1a;border:1px solid var(--border-primary);border-radius:10px;color:var(--text-primary);padding:10px}
+
+    /* Radar Canvas */
+    .scope-wrap{display:flex;gap:12px;flex-wrap:wrap}
+    .scope{
+      position:relative;display:inline-block;border:1px solid var(--border-secondary);
+      border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at center,#061018 0%,#04070b 80%)
+    }
+    .scope canvas{display:block}
+    .scope .overlay{
+      position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 17px,rgba(255,255,255,.03) 18px)
+    }
+
+    /* Toolbar */
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+    .toggle{
+      border:1px solid var(--border-secondary);padding:8px 10px;border-radius:10px;cursor:pointer
+    }
+    .toggle.active{border-color:var(--accent-cyan);box-shadow:0 0 0 2px rgba(33,230,193,.12) inset}
+
+    /* Footer mini */
+    .mini{
+      display:flex;gap:8px;margin-top:6px;color:var(--text-muted);font-size:.8rem
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar (15+ icons across multiple groups) -->
+    <aside class="sidebar">
+      <div class="brand">
+        <i class="fa-solid fa-shield-halved"></i>
+        <div class="t">
+          <div class="name">FALCON</div>
+          <div class="sub">Quantum Defense Dashboard</div>
+        </div>
+      </div>
+
+      <div class="menu">
+        <div class="group">Core</div>
+        <div class="item active" onclick="nav('view-dashboard')"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></div>
+        <div class="item" onclick="nav('view-radar')"><i class="fa-solid fa-radar"></i><span>Radar</span></div>
+        <div class="item" onclick="nav('view-quantum')"><i class="fa-solid fa-atom"></i><span>Quantum</span></div>
+        <div class="item" onclick="nav('view-communications')"><i class="fa-solid fa-comments"></i><span>Communications</span></div>
+        <div class="item" onclick="nav('view-operations')"><i class="fa-solid fa-network-wired"></i><span>Operations</span></div>
+
+        <div class="group">Mission</div>
+        <div class="item" onclick="nav('view-bases')"><i class="fa-solid fa-tower-observation"></i><span>Bases</span></div>
+        <div class="item" onclick="nav('view-logistics')"><i class="fa-solid fa-truck-plane"></i><span>Logistics</span></div>
+        <div class="item" onclick="nav('view-intel')"><i class="fa-solid fa-user-secret"></i><span>Intelligence</span></div>
+        <div class="item" onclick="nav('view-maintenance')"><i class="fa-solid fa-screwdriver-wrench"></i><span>Maintenance</span></div>
+        <div class="item" onclick="nav('view-training')"><i class="fa-solid fa-graduation-cap"></i><span>Training</span></div>
+
+        <div class="group">Analytics</div>
+        <div class="item" onclick="nav('view-analytics')"><i class="fa-solid fa-chart-line"></i><span>Analytics</span></div>
+        <div class="item" onclick="nav('view-heatmap')"><i class="fa-solid fa-fire"></i><span>Heatmap</span></div>
+        <div class="item" onclick="nav('view-map')"><i class="fa-solid fa-map-location-dot"></i><span>Command Map</span></div>
+        <div class="item" onclick="nav('view-integration')"><i class="fa-solid fa-layer-group"></i><span>Integration</span></div>
+
+        <div class="group">System</div>
+        <div class="item" onclick="nav('view-settings')"><i class="fa-solid fa-gear"></i><span>Settings</span></div>
+        <div class="item" onclick="nav('view-admin')"><i class="fa-solid fa-user-gear"></i><span>Admin</span></div>
+        <div class="item" onclick="nav('view-reports')"><i class="fa-solid fa-file-chart-pie"></i><span>Reports</span></div>
+        <div class="item" onclick="nav('view-help')"><i class="fa-solid fa-circle-question"></i><span>Help</span></div>
+      </div>
+      <div class="footer-note">v1.0 unified single-file build</div>
+    </aside>
+
+    <!-- Header -->
+    <header class="header">
+      <div class="crumbs"><i class="fa-solid fa-location-dot" style="color:var(--accent-purple)"></i> <span id="crumb">Dashboard</span></div>
+      <div class="hdr-stats">
+        <div class="chip"><i class="fa-solid fa-clock"></i> <span id="localClock">--:--:--</span></div>
+        <div class="chip"><i class="fa-solid fa-signal"></i> Link <span id="linkState" class="ok">OK</span></div>
+        <div class="chip"><i class="fa-solid fa-bolt"></i> Load <span id="sysLoad">18%</span></div>
+      </div>
+      <div class="header-cta">
+        <button class="btn ghost" onclick="quickPing()"><i class="fa-solid fa-wifi"></i> Ping</button>
+        <button class="btn purple" onclick="simulateThreat()"><i class="fa-solid fa-circle-plus"></i> Simulate Threat</button>
+        <button class="btn cyan" onclick="openCommand()"><i class="fa-solid fa-terminal"></i> Command</button>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="main">
+      <!-- Dashboard -->
+      <section id="view-dashboard" class="view active">
+        <div class="grid c4">
+          <div class="stat"><div class="k">Active Threats</div><div class="v" id="statThreats">0</div><div class="mut">Tracked in last 15 min</div></div>
+          <div class="stat"><div class="k">Critical</div><div class="v err" id="statCritical">0</div><div class="mut">Missiles</div></div>
+          <div class="stat"><div class="k">Medium</div><div class="v warn" id="statMedium">0</div><div class="mut">Drones</div></div>
+          <div class="stat"><div class="k">Low</div><div class="v ok" id="statLow">0</div><div class="mut">Other</div></div>
+        </div>
+
+        <div class="grid c2" style="margin-top:12px">
+          <div class="card">
+            <div class="card-h">
+              <h3>Threat Overview</h3>
+              <div class="toolbar">
+                <button class="btn ghost" onclick="clearThreats()"><i class="fa-solid fa-broom"></i> Clear</button>
+                <button class="btn cyan" onclick="simulateThreat()"><i class="fa-solid fa-plus"></i> Add</button>
+              </div>
+            </div>
+            <table id="threatTable">
+              <thead><tr><th>Time</th><th>Type</th><th>Base</th><th>Confidence</th><th>Q-Score</th><th>Action</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-h">
+              <h3>Network Bases</h3>
+              <div class="toolbar">
+                <span class="mut">Auto-refresh</span>
+                <div class="toggle active" id="autoRefreshBtn" onclick="toggleAutoRefresh(this)">On</div>
+              </div>
+            </div>
+            <table id="baseTable">
+              <thead><tr><th>Base</th><th>Status</th><th>Personnel</th><th>Threat</th><th>Sync%</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="grid c2" style="margin-top:12px">
+          <div class="card">
+            <div class="card-h"><h3>Radar Activity</h3></div>
+            <canvas id="radarChart" height="120"></canvas>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>Quantum Threat Probability</h3></div>
+            <canvas id="quantumChart" height="120"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Radar -->
+      <section id="view-radar" class="view">
+        <div class="grid c2">
+          <div class="card">
+            <div class="card-h">
+              <h3>2D Radar Scope</h3>
+              <div class="toolbar">
+                <button class="btn ghost" onclick="changeRange(-10)"><i class="fa-solid fa-minus"></i></button>
+                <div class="toggle active" id="rangeLabel">Range: <span id="rangeKm">100</span> km</div>
+                <button class="btn ghost" onclick="changeRange(10)"><i class="fa-solid fa-plus"></i></button>
+                <button class="btn red" onclick="clearContacts()"><i class="fa-solid fa-eraser"></i> Clear</button>
+              </div>
+            </div>
+            <div class="scope-wrap">
+              <div class="scope">
+                <canvas id="radar2d" width="640" height="420"></canvas>
+                <div class="overlay"></div>
+              </div>
+            </div>
+            <div class="mini">
+              <span>Contacts: <b id="contactsCount">0</b></span>
+              <span>Tracking: <b id="trackingCount">0</b></span>
+              <span>Mode: <b id="radarMode">Standard</b></span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-h"><h3>Scope Controls</h3></div>
+            <div class="toolbar" style="margin-bottom:10px">
+              <div class="toggle active" onclick="toggleRadarMode(this)"><i class="fa-solid fa-sliders"></i> Toggle Mode</div>
+              <div class="toggle" onclick="spawnContact()"><i class="fa-solid fa-bullseye"></i> Spawn Contact</div>
+              <div class="toggle" onclick="spawnBurst(5)"><i class="fa-solid fa-burst"></i> Burst x5</div>
+              <div class="toggle" onclick="spawnBurst(15)"><i class="fa-solid fa-burst"></i> Burst x15</div>
+            </div>
+            <div class="grid c2">
+              <div class="stat"><div class="k">Sweep RPM</div><div class="v" id="rpm">2.4</div><div class="mut">Standard sweep rate</div></div>
+              <div class="stat"><div class="k">Signal Gain</div><div class="v" id="gain">+4.0 dB</div><div class="mut">Auto gain control</div></div>
+            </div>
+            <div class="card" style="margin-top:10px">
+              <div class="card-h"><h3>Active Tracks</h3></div>
+              <table id="tracksTable">
+                <thead><tr><th>Type</th><th>Angle</th><th>Range</th><th>Priority</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quantum -->
+      <section id="view-quantum" class="view">
+        <div class="grid c2">
+          <div class="card">
+            <div class="card-h"><h3>Quantum Predictions</h3></div>
+            <canvas id="quantumPred" height="140"></canvas>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>Quantum Signals</h3></div>
+            <canvas id="quantumSignals" height="140"></canvas>
+          </div>
+        </div>
+        <div class="card" style="margin-top:12px">
+          <div class="card-h"><h3>Quantum Log</h3></div>
+          <div id="quantumLog" class="mut" style="max-height:180px;overflow:auto"></div>
+        </div>
+      </section>
+
+      <!-- Communications -->
+      <section id="view-communications" class="view">
+        <div class="card comm">
+          <div class="msgs" id="msgs"></div>
+          <div class="input">
+            <input id="msgInput" placeholder="Type message..." />
+            <button class="btn cyan" onclick="sendMsg()"><i class="fa-solid fa-paper-plane"></i> Send</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Operations -->
+      <section id="view-operations" class="view">
+        <div class="grid c2">
+          <div class="card">
+            <div class="card-h"><h3>Recent Operations</h3></div>
+            <div id="opsLog"></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>Resource Allocation</h3></div>
+            <canvas id="resAlloc" height="160"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bases -->
+      <section id="view-bases" class="view">
+        <div class="card">
+          <div class="card-h"><h3>Base Directory</h3></div>
+          <table id="baseDir">
+            <thead><tr><th>Name</th><th>Status</th><th>Threat</th><th>Personnel</th><th>Quantum</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Logistics -->
+      <section id="view-logistics" class="view">
+        <div class="grid c2">
+          <div class="card">
+            <div class="card-h"><h3>Supply Routes</h3></div>
+            <canvas id="supplyChart" height="140"></canvas>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>Fleet Health</h3></div>
+            <canvas id="fleetChart" height="140"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Intelligence -->
+      <section id="view-intel" class="view">
+        <div class="card">
+          <div class="card-h"><h3>Signals Intelligence</h3></div>
+          <div id="sigint" class="mut" style="min-height:140px"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Threat Timeline</h3></div>
+          <div id="intelTimeline" class="mut" style="max-height:200px;overflow:auto"></div>
+        </div>
+      </section>
+
+      <!-- Maintenance -->
+      <section id="view-maintenance" class="view">
+        <div class="grid c2">
+          <div class="card">
+            <div class="card-h"><h3>System Health</h3></div>
+            <table id="healthTable">
+              <thead><tr><th>Subsystem</th><th>Status</th><th>Load</th><th>Last Check</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>Alerts</h3></div>
+            <div id="maintAlerts"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Training -->
+      <section id="view-training" class="view">
+        <div class="card">
+          <div class="card-h"><h3>Simulations</h3></div>
+          <table id="trainingTable">
+            <thead><tr><th>Scenario</th><th>Level</th><th>Status</th><th>Score</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Analytics -->
+      <section id="view-analytics" class="view">
+        <div class="grid c3">
+          <div class="card"><div class="card-h"><h3>Threat Heatmap</h3></div><canvas id="heatmap" width="520" height="300"></canvas></div>
+          <div class="card"><div class="card-h"><h3>Network Graph</h3></div><canvas id="netGraph" width="520" height="300"></canvas></div>
+          <div class="card"><div class="card-h"><h3>Event Timeline</h3></div><canvas id="timeline" width="520" height="300"></canvas></div>
+        </div>
+      </section>
+
+      <!-- Heatmap Dedicated -->
+      <section id="view-heatmap" class="view">
+        <div class="card"><div class="card-h"><h3>Dedicated Heatmap</h3></div><canvas id="heatmapBig" width="1200" height="560"></canvas></div>
+      </section>
+
+      <!-- Command Map -->
+      <section id="view-map" class="view">
+        <div class="card"><div class="card-h"><h3>Base Command Map</h3></div><canvas id="networkBaseMap" width="1200" height="560" style="border:1px solid var(--border-secondary)"></canvas></div>
+      </section>
+
+      <!-- Integration -->
+      <section id="view-integration" class="view">
+        <div class="card">
+          <div class="card-h"><h3>Full Integration Panel</h3></div>
+          <div class="grid c3">
+            <canvas id="finRadar" width="480" height="300" class="card"></canvas>
+            <canvas id="finQuantum" width="480" height="300" class="card"></canvas>
+            <canvas id="finNetwork" width="480" height="300" class="card"></canvas>
+          </div>
+          <div class="toolbar" style="margin-top:10px">
+            <button class="btn cyan" onclick="runFullSim()"><i class="fa-solid fa-play"></i> Run Full Sim</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Settings -->
+      <section id="view-settings" class="view">
+        <div class="card">
+          <div class="card-h"><h3>System Settings</h3></div>
+          <div class="toolbar" style="margin-bottom:10px">
+            <label class="toggle active"><input id="sound" type="checkbox" checked style="display:none" /> <i class="fa-solid fa-volume-high"></i> Sound</label>
+            <label class="toggle"><input id="darkMode" type="checkbox" style="display:none" /> <i class="fa-solid fa-moon"></i> Dark Mode</label>
+            <div class="toggle">Radar Range <input id="setRange" type="number" value="100" style="width:90px;margin-left:8px;background:transparent;border:1px solid var(--border-secondary);border-radius:8px;color:var(--text-primary);padding:6px" /></div>
+            <button class="btn ghost" onclick="applySettings()"><i class="fa-solid fa-floppy-disk"></i> Apply</button>
+          </div>
+          <div class="mut">Changes apply instantly to active modules.</div>
+        </div>
+      </section>
+
+      <!-- Admin -->
+      <section id="view-admin" class="view">
+        <div class="grid c2">
+          <div class="card">
+            <div class="card-h"><h3>User Access</h3></div>
+            <table id="userTable"><thead><tr><th>User</th><th>Role</th><th>Status</th></tr></thead><tbody></tbody></table>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>Audit Log</h3></div>
+            <div id="auditLog" class="mut" style="max-height:260px;overflow:auto"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Reports -->
+      <section id="view-reports" class="view">
+        <div class="card">
+          <div class="card-h"><h3>Generate Reports</h3></div>
+          <div class="toolbar">
+            <button class="btn cyan" onclick="genReport('daily')"><i class="fa-solid fa-calendar-day"></i> Daily</button>
+            <button class="btn cyan" onclick="genReport('weekly')"><i class="fa-solid fa-calendar-week"></i> Weekly</button>
+            <button class="btn cyan" onclick="genReport('monthly')"><i class="fa-solid fa-calendar-days"></i> Monthly</button>
+          </div>
+          <div id="reportOut" class="mut" style="margin-top:10px"></div>
+        </div>
+      </section>
+
+      <!-- Help -->
+      <section id="view-help" class="view">
+        <div class="card">
+          <div class="card-h"><h3>Help & Shortcuts</h3></div>
+          <ul style="line-height:1.8">
+            <li>G then D — Go to Dashboard</li>
+            <li>G then R — Go to Radar</li>
+            <li>G then Q — Go to Quantum</li>
+            <li>G then C — Go to Comms</li>
+            <li>Shift + S — Quick Settings</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    /* =========================
+       State and Data
+       ========================= */
+    const state = {
+      threats: [],
+      contacts: [],
+      bases: [
+        {name:'Alpha', status:'OPERATIONAL', personnel:1200, threat:'LOW', sync:100, quantum:true},
+        {name:'Bravo', status:'OFFLINE',    personnel:800,  threat:'MED', sync:72,  quantum:false},
+        {name:'Charlie',status:'OPERATIONAL',personnel:950,  threat:'HIGH',sync:88,  quantum:true},
+        {name:'Delta',  status:'OPERATIONAL',personnel:1050, threat:'MED', sync:91,  quantum:false},
+        {name:'Echo',   status:'OPERATIONAL',personnel:650,  threat:'LOW', sync:96,  quantum:true}
+      ],
+      users: [
+        {name:'ops-alpha', role:'Operator', status:'Active'},
+        {name:'hq-admin', role:'Admin', status:'Active'},
+        {name:'guest-01', role:'Viewer', status:'Suspended'}
+      ],
+      settings: { sound:true, dark:false, range:100, auto:true },
+      timers: [],
+      charts: {}
+    };
+
+    /* =========================
+       Navigation
+       ========================= */
+    function nav(id){
+      document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+      const el = document.getElementById(id);
+      if(el) el.classList.add('active');
+      document.getElementById('crumb').textContent = mapCrumb(id);
+      document.querySelectorAll('.item').forEach(i=>i.classList.remove('active'));
+      // match active in sidebar
+      [...document.querySelectorAll('.item')].forEach(i=>{
+        const txt = i.textContent.trim().toLowerCase();
+        const key = id.replace('view-','');
+        if(txt.includes(key)) i.classList.add('active');
+      });
+    }
+    function mapCrumb(id){
+      return ({
+        'view-dashboard':'Dashboard','view-radar':'Radar','view-quantum':'Quantum',
+        'view-communications':'Communications','view-operations':'Operations',
+        'view-bases':'Bases','view-logistics':'Logistics','view-intel':'Intelligence',
+        'view-maintenance':'Maintenance','view-training':'Training',
+        'view-analytics':'Analytics','view-heatmap':'Heatmap','view-map':'Command Map',
+        'view-integration':'Integration','view-settings':'Settings','view-admin':'Admin',
+        'view-reports':'Reports','view-help':'Help'
+      })[id] || 'Dashboard';
+    }
+
+    /* =========================
+       Dashboard Tables
+       ========================= */
+    function renderBases(){
+      // Network Bases (dashboard)
+      const tb = document.querySelector('#baseTable tbody');
+      if(!tb) return;
+      tb.innerHTML='';
+      state.bases.forEach(b=>{
+        tb.insertAdjacentHTML('beforeend',
+          `<tr>
+             <td>${b.name}</td>
+             <td><span class="badge ${b.status==='OPERATIONAL'?'b-gn':'b-rd'}">${b.status}</span></td>
+             <td>${b.personnel}</td>
+             <td>${b.threat}</td>
+             <td>${b.sync}</td>
+           </tr>`);
+      });
+      // Base Directory (bases)
+      const bd = document.querySelector('#baseDir tbody');
+      if(bd){
+        bd.innerHTML='';
+        state.bases.forEach(b=>{
+          bd.insertAdjacentHTML('beforeend',
+            `<tr>
+               <td>${b.name}</td>
+               <td><span class="badge ${b.status==='OPERATIONAL'?'b-gn':'b-rd'}">${b.status}</span></td>
+               <td>${b.threat}</td>
+               <td>${b.personnel}</td>
+               <td>${b.quantum?'<span class="badge b-pu">QKD</span>':'<span class="badge b-am">Classical</span>'}</td>
+             </tr>`);
+        });
+      }
+    }
+
+    function renderThreats(){
+      const tb = document.querySelector('#threatTable tbody');
+      if(!tb) return;
+      tb.innerHTML='';
+      state.threats.slice(-200).forEach(t=>{
+        tb.insertAdjacentHTML('beforeend',
+          `<tr>
+             <td>${t.time}</td>
+             <td>${t.type}</td>
+             <td>${t.base}</td>
+             <td>${t.conf}%</td>
+             <td>${t.q}%</td>
+             <td><span class="badge b-gn">${t.action}</span></td>
+           </tr>`);
+      });
+      updateThreatStats();
+    }
+
+    function clearThreats(){
+      state.threats.length = 0;
+      renderThreats();
+    }
+
+    function updateThreatStats(){
+      const T = state.threats.length;
+      const C = state.threats.filter(x=>x.type==='Missile').length;
+      const M = state.threats.filter(x=>x.type==='Drone').length;
+      const L = T - C - M;
+      setTxt('statThreats',T);
+      setTxt('statCritical',C);
+      setTxt('statMedium',M);
+      setTxt('statLow',L);
+    }
+
+    /* =========================
+       Threat Simulator
+       ========================= */
+    function simulateThreat(){
+      const types = ['Drone','Missile','Aircraft','Jamming'];
+      const t = {
+        time:new Date().toLocaleTimeString(),
+        type: types[Math.floor(Math.random()*types.length)],
+        base: state.bases[Math.floor(Math.random()*state.bases.length)].name,
+        conf: (50 + Math.random()*50 | 0),
+        q: (Math.random()*100 | 0),
+        action: 'INTERCEPT'
+      };
+      state.threats.push(t);
+      renderThreats();
+      if(state.settings.sound && window._beep){
+        _beep.currentTime=0; _beep.play().catch(()=>{});
+      }
+    }
+
+    /* =========================
+       Charts (Chart.js)
+       ========================= */
+    function initCharts(){
+      // Radar Activity
+      const rc = document.getElementById('radarChart');
+      if(rc){
+        state.charts.radarChart = new Chart(rc,{
+          type:'line',
+          data:{
+            labels:[...Array(12)].map((_,i)=>i+1),
+            datasets:[{
+              label:'Detections',
+              data:[...Array(12)].map(()=>10+Math.random()*30),
+              borderColor:'#21e6c1',
+              backgroundColor:'rgba(33,230,193,.18)',
+              tension:.25,fill:true
+            }]
+          },
+          options:{plugins:{legend:{display:true}},scales:{y:{beginAtZero:true}}}
+        });
+      }
+      // Quantum Probability
+      const qc = document.getElementById('quantumChart');
+      if(qc){
+        state.charts.quantumChart = new Chart(qc,{
+          type:'bar',
+          data:{
+            labels:['Drone','Missile','Aircraft','Jamming'],
+            datasets:[{label:'Q-Prob%',data:[85,92,78,66],backgroundColor:['#21e6c1','#ff4d4f','#9b5cff','#ffc107']}]
+          },
+          options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100}}}
+        });
+      }
+      // Resource Allocation
+      const ra = document.getElementById('resAlloc');
+      if(ra){
+        state.charts.resAlloc = new Chart(ra,{
+          type:'doughnut',
+          data:{
+            labels:['Interceptors','Drones','Personnel','AI'],
+            datasets:[{data:[42,28,200,12],backgroundColor:['#21e6c1','#9b5cff','#ffc107','#ff4d4f']}]
+          },
+          options:{plugins:{legend:{display:true}}}
+        });
+      }
+      // Logistics charts
+      const sc = document.getElementById('supplyChart');
+      if(sc){
+        state.charts.supply = new Chart(sc,{
+          type:'line',
+          data:{labels:[...Array(8)].map((_,i)=>'R'+(i+1)),
+            datasets:[{label:'Throughput',data:[...Array(8)].map(()=>50+Math.random()*50),borderColor:'#14b8ff',fill:false,tension:.25}]},
+          options:{scales:{y:{min:0,max:120}}}
+        });
+      }
+      const fc = document.getElementById('fleetChart');
+      if(fc){
+        state.charts.fleet = new Chart(fc,{
+          type:'bar',
+          data:{labels:['Air','Ground','Naval','EW'],
+            datasets:[{label:'Health',data:[92,74,81,88],backgroundColor:['#21e6c1','#ffc107','#9b5cff','#ff6ec7']}]},
+          options:{scales:{y:{min:0,max:100}}}
+        });
+      }
+      // Quantum detailed
+      const qp = document.getElementById('quantumPred');
+      if(qp){
+        state.charts.qPred = new Chart(qp,{type:'line',
+          data:{labels:[...Array(24)].map((_,i)=>i+1),
+            datasets:[{label:'Prediction Score',data:[...Array(24)].map(()=>60+Math.random()*35),borderColor:'#9b5cff',tension:.3,fill:false}]},
+          options:{scales:{y:{min:0,max:100}}}
+        });
+      }
+      const qs = document.getElementById('quantumSignals');
+      if(qs){
+        state.charts.qSig = new Chart(qs,{type:'bar',
+          data:{labels:[...Array(12)].map((_,i)=>i+1),
+            datasets:[{label:'Signal',data:[...Array(12)].map(()=>Math.random()*100|0),backgroundColor:'#21e6c1'}]},
+          options:{scales:{y:{min:0,max:100}}}
+        });
+      }
+    }
+
+    // periodic updates for charts
+    setInterval(()=>{
+      const rc = state.charts.radarChart;
+      if(rc){
+        rc.data.datasets.data.push(10+Math.random()*30);
+        rc.data.datasets.data.shift();
+        rc.update('none');
+      }
+      const qc = state.charts.quantumChart;
+      if(qc){
+        qc.data.datasets.data = qc.data.datasets.data.map(v=>Math.max(0,Math.min(100,v+(Math.random()*6-3))));
+        qc.update('none');
+      }
+      const qP = state.charts.qPred;
+      if(qP){
+        qP.data.datasets.data = qP.data.datasets.data.map(v=>Math.max(0,Math.min(100,v+(Math.random()*6-3))));
+        qP.update('none');
+      }
+    },2500);
+
+    /* =========================
+       Radar 2D
+       ========================= */
+    function drawRadar(){
+      const cv = document.getElementById('radar2d'); if(!cv) return;
+      const ctx = cv.getContext('2d');
+      ctx.clearRect(0,0,cv.width,cv.height);
+      const cx=cv.width/2, cy=cv.height/2, R=Math.min(cx,cy)-16;
+
+      // rings
+      ctx.strokeStyle="#223945"; ctx.lineWidth=1;
+      for(let r=R;r>0;r-=R/4){ ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke(); }
+
+      // sweep
+      const a=(Date.now()/120)%(Math.PI*2);
+      ctx.strokeStyle="#21e6c1";
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+R*Math.cos(a),cy+R*Math.sin(a)); ctx.stroke();
+
+      // contacts
+      state.contacts.forEach(pt=>{
+        const x=cx+pt.d*R*Math.cos(pt.a), y=cy+pt.d*R*Math.sin(pt.a);
+        ctx.fillStyle = pt.t==="Missile" ? "#ff4d4f" : (pt.t==="Drone" ? "#00ff88" : "#9b5cff");
+        ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
+      });
+    }
+    setInterval(drawRadar,60);
+
+    function changeRange(d){ state.settings.range = Math.max(50,Math.min(300,state.settings.range + d)); setTxt('rangeKm',state.settings.range); }
+    function clearContacts(){ state.contacts.length=0; updateContactStats(); renderTracks(); }
+    function spawnContact(){
+      const types=['Drone','Missile','Aircraft','Jamming'];
+      const t=types[Math.floor(Math.random()*types.length)];
+      const c={t,a:Math.random()*Math.PI*2,d:0.2+Math.random()*0.7};
+      state.contacts.push(c); updateContactStats(); renderTracks();
+    }
+    function spawnBurst(n){ for(let i=0;i<n;i++) spawnContact(); }
+    function toggleRadarMode(el){
+      const lab = document.getElementById('radarMode');
+      lab.textContent = lab.textContent==='Standard' ? 'Quantum-Enhanced' : 'Standard';
+      if(el) el.classList.toggle('active');
+    }
+    function updateContactStats(){
+      setTxt('contactsCount',state.contacts.length);
+      setTxt('trackingCount',state.contacts.filter(x=>x.t!=='Jamming').length);
+    }
+    function renderTracks(){
+      const tb = document.querySelector('#tracksTable tbody'); if(!tb) return;
+      tb.innerHTML='';
+      state.contacts.slice(-30).forEach(c=>{
+        tb.insertAdjacentHTML('beforeend',
+          `<tr>
+             <td>${c.t}</td>
+             <td>${(c.a*180/Math.PI).toFixed(1)}°</td>
+             <td>${(c.d*state.settings.range).toFixed(1)} km</td>
+             <td>${c.t==='Missile' ? '<span class="badge b-rd">High</span>' : c.t==='Drone' ? '<span class="badge b-am">Med</span>' : '<span class="badge b-gn">Low</span>'}</td>
+           </tr>`);
+      });
+    }
+
+    /* =========================
+       Communications
+       ========================= */
+    const messages=[];
+    function sendMsg(){
+      const i=document.getElementById('msgInput'); if(!i.value.trim()) return;
+      messages.push({s:'CMD',t:i.value.trim(),time:new Date().toLocaleTimeString()});
+      i.value=''; renderMsgs();
+    }
+    function renderMsgs(){
+      const c=document.getElementById('msgs'); if(!c) return; c.innerHTML='';
+      messages.slice(-200).forEach(m=>{
+        c.insertAdjacentHTML('beforeend',
+         `<div class="msg">
+            <div class="avatar">C</div>
+            <div>
+              <div><b>${m.s}</b> <span class="meta">${m.time}</span></div>
+              <div>${m.t}</div>
+            </div>
+          </div>`);
+      });
+      c.scrollTop=c.scrollHeight;
+    }
+
+    /* =========================
+       Operations, Admin, Settings
+       ========================= */
+    function renderOps(){
+      const ops = [
+        'Perimeter sweep completed - No threats detected',
+        'AI model updated - Accuracy improved to 94.2%',
+        'Quantum link established with East Command',
+        'Federated learning sync in progress - 78% complete',
+        'EW systems calibrated',
+        'Surveillance drone deployment completed',
+        'Cyber defense protocols updated',
+        'Personnel training simulation completed'
+      ];
+      const el = document.getElementById('opsLog'); if(!el) return;
+      el.innerHTML = ops.slice(0,5).map(x=>`<div class="mut">• ${x}</div>`).join('');
+    }
+
+    function renderUsers(){
+      const tb = document.querySelector('#userTable tbody'); if(!tb) return;
+      tb.innerHTML='';
+      state.users.forEach(u=>{
+        tb.insertAdjacentHTML('beforeend',
+          `<tr><td>${u.name}</td><td>${u.role}</td><td>${u.status}</td></tr>`);
+      });
+      const al = document.getElementById('auditLog'); if(al){
+        al.innerHTML = ['User login ops-alpha','Role update: guest-01 -> Suspended','Config changed: radar range 100']
+          .map(x=>`<div>• ${x} <span class="meta">(${new Date().toLocaleTimeString()})</span></div>`).join('');
+      }
+    }
+
+    function applySettings(){
+      const snd = document.getElementById('sound').checked;
+      const rng = parseInt(document.getElementById('setRange').value)||100;
+      state.settings.sound = snd;
+      state.settings.range = rng;
+      setTxt('rangeKm',rng);
+    }
+
+    function toggleAutoRefresh(el){
+      el.classList.toggle('active');
+      state.settings.auto = el.classList.contains('active');
+    }
+
+    /* =========================
+       Analytics Canvases
+       ========================= */
+    function drawHeatmap(canvasId,w=700,h=400,bubbles=40){
+      const c=document.getElementById(canvasId); if(!c) return;
+      const x=c.getContext('2d'); x.clearRect(0,0,c.width,c.height);
+      if(w&&h){ c.width=w; c.height=h; }
+      for(let i=0;i<bubbles;i++){
+        const px=Math.random()*c.width, py=Math.random()*c.height, r=15+Math.random()*45;
+        const g=x.createRadialGradient(px,py,0,px,py,r);
+        const tint = (100+Math.random()*155|0);
+        g.addColorStop(0,`rgba(255,${tint},0,.75)`); g.addColorStop(1,'rgba(0,0,0,0)');
+        x.fillStyle=g; x.fillRect(px-r,py-r,r*2,r*2);
+      }
+    }
+
+    function drawNetGraph(){
+      const c=document.getElementById('netGraph'); if(!c) return;
+      const x=c.getContext('2d'); x.clearRect(0,0,c.width,c.height);
+      const nodes=[{n:"Alpha",x:120,y:80},{n:"Bravo",x:280,y:60},{n:"Charlie",x:460,y:160},{n:"Delta",x:200,y:220},{n:"Echo",x:380,y:240}];
+      x.strokeStyle="#2f7f7a"; x.lineWidth=2;
+      for(let i=0;i<nodes.length;i++){ for(let j=i+1;j<nodes.length;j++){ x.beginPath(); x.moveTo(nodes[i].x,nodes[i].y); x.lineTo(nodes[j].x,nodes[j].y); x.stroke(); } }
+      nodes.forEach(nd=>{ x.fillStyle="#21e6c1"; x.beginPath(); x.arc(nd.x,nd.y,8,0,Math.PI*2); x.fill(); x.fillStyle="#e0f7fa"; x.fillText(nd.n,nd.x-18,nd.y-12); });
+    }
+
+    function drawTimeline(){
+      const c=document.getElementById('timeline'); if(!c) return;
+      const x=c.getContext('2d'); x.clearRect(0,0,c.width,c.height);
+      x.strokeStyle="#21e6c1"; x.beginPath(); let first=true;
+      for(let i=0;i<50;i++){
+        const px=i*(c.width/50), py=c.height-(Math.random()*c.height*0.8+20);
+        if(first){ x.moveTo(px,py); first=false; } else { x.lineTo(px,py); }
+      }
+      x.stroke();
+    }
+
+    /* =========================
+       Command Map (Phase 9 style)
+       ========================= */
+    function updateBaseMap(){
+      const c = document.getElementById('networkBaseMap'); if(!c) return;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0,0,c.width,c.height);
+      const B = [
+        {name:'Alpha',x:160,y:180,status:'OPERATIONAL'},
+        {name:'Bravo',x:420,y:120,status:'OPERATIONAL'},
+        {name:'Charlie',x:760,y:280,status:'OFFLINE'},
+        {name:'Delta',x:540,y:360,status:'OPERATIONAL'},
+        {name:'Echo',x:900,y:190,status:'OPERATIONAL'}
+      ];
+      B.forEach(b=>{
+        ctx.beginPath(); ctx.arc(b.x,b.y,18,0,Math.PI*2);
+        ctx.fillStyle = (b.status==='OPERATIONAL') ? '#00ff88' : '#ff4d4f'; ctx.fill();
+        ctx.fillStyle = '#e0f7fa'; ctx.fillText(b.name,b.x-18,b.y-26);
+      });
+      // random traffic
+      ctx.strokeStyle='rgba(33,230,193,.5)'; ctx.lineWidth=2;
+      for(let i=0;i<10;i++){
+        const from=B[Math.floor(Math.random()*B.length)];
+        const to=B[Math.floor(Math.random()*B.length)];
+        if(from!==to){ ctx.beginPath(); ctx.moveTo(from.x,from.y); ctx.lineTo(to.x,to.y); ctx.stroke(); }
+      }
+    }
+
+    /* =========================
+       Integration
+       ========================= */
+    function runFullSim(){
+      const R=document.getElementById('finRadar')?.getContext('2d');
+      const Q=document.getElementById('finQuantum')?.getContext('2d');
+      const N=document.getElementById('finNetwork')?.getContext('2d');
+      if(R){ R.clearRect(0,0,480,300); for(let i=0;i<20;i++){ R.strokeStyle='rgba(33,230,193,.6)'; R.beginPath(); R.arc(240,150,10+i*5,0,Math.PI*2); R.stroke(); } }
+      if(Q){ Q.clearRect(0,0,480,300); for(let i=0;i<40;i++){ const x=20+Math.random()*440, y=20+Math.random()*260; Q.fillStyle=`rgba(155,92,255,${Math.random()*0.7+0.3})`; Q.fillRect(x,y,6,6);} }
+      if(N){ N.clearRect(0,0,480,300); for(let i=0;i<18;i++){ N.fillStyle='#21e6c1'; N.beginPath(); N.arc(20+Math.random()*440,20+Math.random()*260,6,0,Math.PI*2); N.fill(); } }
+    }
+
+    /* =========================
+       Reports
+       ========================= */
+    function genReport(type){
+      const out = document.getElementById('reportOut'); if(!out) return;
+      out.textContent = `Report (${type}) generated at ${new Date().toLocaleTimeString()}`;
+    }
+
+    /* =========================
+       Utilities & Boot
+       ========================= */
+    function setTxt(id,v){ const el=document.getElementById(id); if(el) el.textContent=v; }
+    function quickPing(){ setTxt('linkState','OK'); }
+    function openCommand(){ alert('Command console opening...'); }
+
+    function boot(){
+      // timed clock
+      setInterval(()=>setTxt('localClock', new Date().toLocaleTimeString()),1000);
+
+      // populate
+      renderBases(); renderThreats(); renderOps(); renderUsers(); renderMsgs();
+
+      // charts
+      initCharts();
+
+      // analytics canvases
+      drawHeatmap('heatmap',520,300,36);
+      drawNetGraph();
+      drawTimeline();
+      drawHeatmap('heatmapBig',1200,560,80);
+
+      // command map init
+      updateBaseMap();
+
+      // audio
+      window._beep = new Audio('data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAA');
+
+      // background threat sim
+      setInterval(()=>{ if(Math.random()<0.28){ simulateThreat(); } }, 3500);
+    }
+    window.addEventListener('DOMContentLoaded', boot);
+  </script>
+</body>
+</html>
+<!-- End Part 1/4 -->
+ <!-- ========================= -->
+<!-- Part 2/4 — Continuation -->
+<!-- Append before </body>     -->
+<!-- Lines ~601–1200           -->
+<!-- ========================= -->
+
+<style>
+  /* Part 2 — Additional UI/UX */
+  .dock {
+    position: fixed; bottom: 10px; right: 12px;
+    display: flex; gap: 8px; z-index: 30;
+  }
+  .toast {
+    position: fixed; top: 14px; right: 14px; z-index: 50;
+    padding: 10px 14px; border-radius: 10px;
+    background: rgba(20,24,40,.96);
+    border:1px solid var(--border-secondary);
+    color: var(--text-primary); box-shadow: var(--shadow-2);
+    transform: translateY(-10px); opacity: 0; animation: slideIn .25s ease forwards;
+  }
+  @keyframes slideIn { to { transform: none; opacity: 1; } }
+
+  .kpi {
+    display:grid; grid-template-columns: repeat(5, 1fr); gap: 10px;
+  }
+  .kpi .card { text-align:center }
+  .kpi .big { font-family:'Orbitron',monospace; font-size:1.3rem; font-weight:900 }
+
+  .tag {
+    padding:2px 8px; border:1px solid var(--border-secondary);
+    border-radius:999px; font-size:.75rem; color:var(--text-secondary);
+  }
+
+  /* Simple modal */
+  .modal {
+    position:fixed; inset:0; background:rgba(0,0,0,.6);
+    display:none; align-items:center; justify-content:center; z-index:60;
+  }
+  .modal .panel {
+    background:#0c101a; border:1px solid var(--border-secondary);
+    border-radius:12px; width:min(860px,95vw); padding:16px;
+  }
+  .modal .panel h3 { font-family:'Orbitron'; color:var(--accent-cyan); margin-bottom:8px }
+
+  /* Extra pages layout */
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+  @media(max-width:980px){ .two-col { grid-template-columns:1fr } }
+</style>
+
+<!-- New Views (more pages) -->
+<section id="view-cyber" class="view">
+  <div class="grid c2">
+    <div class="card">
+      <div class="card-h"><h3><i class="fa-solid fa-bug" style="color:var(--accent-purple)"></i> Cyber Defense Posture</h3></div>
+      <canvas id="cyberChart" height="160"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3><i class="fa-solid fa-shield" style="color:var(--accent-cyan)"></i> IDS/IPS Events</h3></div>
+      <div id="idsLog" class="mut" style="max-height:260px;overflow:auto"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="card-h"><h3>Zero-Day Watch</h3></div>
+    <table id="zeroDayTable">
+      <thead><tr><th>CVE</th><th>Severity</th><th>Vector</th><th>Status</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="view-weather" class="view">
+  <div class="two-col">
+    <div class="card">
+      <div class="card-h"><h3><i class="fa-solid fa-cloud-sun" style="color:var(--accent-amber)"></i> Theater Weather</h3></div>
+      <canvas id="weatherChart" height="160"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3><i class="fa-solid fa-wind" style="color:var(--accent-green)"></i> Wind & Visibility</h3></div>
+      <canvas id="windChart" height="160"></canvas>
+    </div>
+  </div>
+  <div class="grid c3" style="margin-top:12px">
+    <div class="stat"><div class="k">Temp</div><div class="v" id="wTemp">--°C</div><div class="mut">Surface</div></div>
+    <div class="stat"><div class="k">Humidity</div><div class="v" id="wHum">--%</div><div class="mut">Relative</div></div>
+    <div class="stat"><div class="k">Cloud</div><div class="v" id="wCloud">--%</div><div class="mut">Coverage</div></div>
+  </div>
+</section>
+
+<section id="view-assets" class="view">
+  <div class="card">
+    <div class="card-h"><h3><i class="fa-solid fa-boxes-stacked" style="color:var(--accent-pink)"></i> Asset Registry</h3></div>
+    <table id="assetTable">
+      <thead><tr><th>ID</th><th>Type</th><th>Status</th><th>Base</th><th>Updated</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-h"><h3>Readiness by Class</h3></div>
+    <canvas id="assetChart" height="160"></canvas>
+  </div>
+</section>
+
+<section id="view-missions" class="view">
+  <div class="card">
+    <div class="card-h"><h3><i class="fa-solid fa-list-check" style="color:var(--accent-amber)"></i> Mission Queue</h3>
+      <div class="toolbar">
+        <button class="btn cyan" onclick="addMission()"><i class="fa-solid fa-plus"></i> New Mission</button>
+      </div>
+    </div>
+    <table id="missionTable">
+      <thead><tr><th>#</th><th>Objective</th><th>Priority</th><th>Status</th><th>ETA</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="grid c2">
+    <div class="card"><div class="card-h"><h3>Throughput</h3></div><canvas id="missionChart" height="160"></canvas></div>
+    <div class="card"><div class="card-h"><h3>Success Ratio</h3></div><canvas id="missionPie" height="160"></canvas></div>
+  </div>
+</section>
+
+<section id="view-ew" class="view">
+  <div class="card">
+    <div class="card-h"><h3><i class="fa-solid fa-tower-broadcast" style="color:var(--accent-blue)"></i> EW Spectrum</h3></div>
+    <canvas id="ewSpectrum" height="180"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-h"><h3>Jamming Events</h3></div>
+    <div id="ewLog" class="mut" style="max-height:260px;overflow:auto"></div>
+  </div>
+</section>
+
+<!-- Quick Actions Dock -->
+<div class="dock" id="quickDock">
+  <button class="btn ghost" onclick="nav('view-cyber')"><i class="fa-solid fa-bug"></i></button>
+  <button class="btn ghost" onclick="nav('view-weather')"><i class="fa-solid fa-cloud-sun"></i></button>
+  <button class="btn ghost" onclick="nav('view-assets')"><i class="fa-solid fa-boxes-stacked"></i></button>
+  <button class="btn ghost" onclick="nav('view-missions')"><i class="fa-solid fa-list-check"></i></button>
+  <button class="btn ghost" onclick="nav('view-ew')"><i class="fa-solid fa-tower-broadcast"></i></button>
+</div>
+
+<!-- Modal: New Mission -->
+<div class="modal" id="missionModal">
+  <div class="panel">
+    <h3><i class="fa-solid fa-flag-checkered"></i> Create Mission</h3>
+    <div class="grid c2">
+      <div>
+        <label class="mut">Objective</label>
+        <input id="mObjective" placeholder="e.g., Recon sector Delta" style="width:100%;margin-top:6px;background:#0a0f1a;border:1px solid var(--border-primary);border-radius:8px;color:var(--text-primary);padding:8px">
+      </div>
+      <div>
+        <label class="mut">Priority</label>
+        <select id="mPriority" style="width:100%;margin-top:6px;background:#0a0f1a;border:1px solid var(--border-primary);border-radius:8px;color:var(--text-primary);padding:8px">
+          <option>LOW</option><option>MED</option><option>HIGH</option><option>CRITICAL</option>
+        </select>
+      </div>
+    </div>
+    <div class="toolbar" style="margin-top:10px">
+      <button class="btn cyan" onclick="saveMission()"><i class="fa-solid fa-check"></i> Save</button>
+      <button class="btn ghost" onclick="closeMissionModal()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ========= Sidebar: inject new menu items (no HTML duplication) ========= */
+  (function ensureMenu(){
+    const menu = document.querySelector('.sidebar .menu');
+    if(!menu) return;
+    // Create groups if missing and append new items only once
+    const exists = (txt)=>[...menu.querySelectorAll('.item')].some(i=>i.textContent.trim().toLowerCase().includes(txt));
+    const addItem = (icon, text, id) => {
+      if(exists(text.toLowerCase())) return;
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.innerHTML = `<i class="fa-solid ${icon}"></i><span>${text}</span>`;
+      div.onclick = ()=>nav(id);
+      menu.appendChild(div);
+    };
+    // Add a new group header if not present
+    const g = document.createElement('div');
+    g.className = 'group'; g.textContent = 'Extended';
+    menu.appendChild(g);
+
+    addItem('fa-bug','Cyber','view-cyber');
+    addItem('fa-cloud-sun','Weather','view-weather');
+    addItem('fa-boxes-stacked','Assets','view-assets');
+    addItem('fa-list-check','Missions','view-missions');
+    addItem('fa-tower-broadcast','EW','view-ew');
+  })();
+
+  /* ========= Override mapCrumb to include new pages ========= */
+  function mapCrumb(id){
+    const m = {
+      'view-dashboard':'Dashboard','view-radar':'Radar','view-quantum':'Quantum',
+      'view-communications':'Communications','view-operations':'Operations',
+      'view-bases':'Bases','view-logistics':'Logistics','view-intel':'Intelligence',
+      'view-maintenance':'Maintenance','view-training':'Training',
+      'view-analytics':'Analytics','view-heatmap':'Heatmap','view-map':'Command Map',
+      'view-integration':'Integration','view-settings':'Settings','view-admin':'Admin',
+      'view-reports':'Reports','view-help':'Help',
+      // New
+      'view-cyber':'Cyber','view-weather':'Weather','view-assets':'Assets',
+      'view-missions':'Missions','view-ew':'EW'
+    };
+    return m[id] || 'Dashboard';
+  }
+
+  /* ========= Toast helper ========= */
+  function toast(msg){
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = `<i class="fa-solid fa-circle-info" style="color:var(--accent-cyan)"></i> ${msg}`;
+    document.body.appendChild(t);
+    setTimeout(()=>{ t.style.opacity=.0; t.style.transform='translateY(-10px)'; }, 2400);
+    setTimeout(()=>t.remove(), 3000);
+  }
+
+  /* ========= Cyber page ========= */
+  function renderCyber(){
+    const ids = document.getElementById('idsLog');
+    if(ids){
+      const pool = [
+        'Blocked port scan from 203.0.113.42',
+        'IDS signature match: Suspicious beacon',
+        'IPS dropped malicious payload attempt',
+        'Anomaly spike in east sector relay',
+        'Brute force thwarted: 25 attempts'
+      ];
+      ids.innerHTML = pool.map(x=>`<div>• ${x} <span class="meta">(${new Date().toLocaleTimeString()})</span></div>`).join('');
+    }
+    const zt = document.querySelector('#zeroDayTable tbody');
+    if(zt){
+      const rows = [
+        {cve:'CVE-2025-1234', sev:'CRITICAL', vec:'RCE', status:'Patch Pending'},
+        {cve:'CVE-2025-2230', sev:'HIGH', vec:'Privilege Esc', status:'Mitigated'},
+        {cve:'CVE-2025-0901', sev:'MEDIUM', vec:'Info Leak', status:'Monitoring'}
+      ];
+      zt.innerHTML = rows.map(r=>`<tr>
+        <td>${r.cve}</td>
+        <td><span class="badge ${r.sev==='CRITICAL'?'b-rd':r.sev==='HIGH'?'b-am':'b-gn'}">${r.sev}</span></td>
+        <td>${r.vec}</td>
+        <td>${r.status}</td>
+      </tr>`).join('');
+    }
+  }
